@@ -2,7 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-class Welcome extends React.Component {
+class User extends React.Component {
+
   constructor(props) {
     super(props);
     this.state = {firstName: props.firstName, lastName: props.lastName}
@@ -26,22 +27,71 @@ class Welcome extends React.Component {
 }
 
 class Clock extends React.Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {date: new Date()}
+  }
+
+
+  componentDidMount() {
+    this.timeID = setInterval(() => this.tick(), 1000);
+  }
+
+  componentWillMount() {
+    clearInterval(this.timeID)
+  }
+
+  tick() {
+    this.setState({
+      date: new Date()
+    });
+  }
+
   render() {
     return (
       <div>
-        <h1>Hello, <Welcome firstName="Chuyen" lastName="Luu" />!</h1>
-        <p>It is {new Date().toLocaleTimeString()}.</p>
-        <h1>Hello, <Welcome firstName="LC" />!</h1>
+        <h1>Hello, <User firstName="Chuyen" lastName="Luu" />!</h1>
+        <p>It is {this.state.date.toLocaleTimeString()}.</p>
       </div>
     )
   }
 }
 
-function tick() {
-  ReactDOM.render(
-    <Clock />,
-    document.getElementById('root')
-  );
+class Toggle extends React.Component {
+
+  constructor(props) {
+    super(props);
+
+    this.state = {isToggleOn: true}
+    this.handleClick = this.handleClick.bind(this);
+  }
+
+  handleClick() {
+    this.setState(preState => ({isToggleOn: !preState.isToggleOn}));
+  }
+
+  render() {
+    return (
+      <button onClick={this.handleClick}>
+        {this.state.isToggleOn ? 'ON' : 'OFF'}
+      </button>
+    );
+  }
 }
 
-setInterval(tick, 1000);
+class App extends React.Component {
+  render() {
+    return (
+      <main>
+        <Clock />
+        <Toggle />
+      </main>
+    );
+  }
+}
+
+ReactDOM.render(
+  <App />,
+  document.getElementById('root')
+);
