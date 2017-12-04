@@ -18,11 +18,11 @@ class FullForm extends React.Component {
       <form onSubmit={this.handleSubmit}>
         <label>
           First Name:
-          <input type="text" ref={(input) => this.fname = input} />
+          <input defaultValue="React" type="text" ref={(input) => this.fname = input} />
         </label>
         <label>
           Last Name:
-          <input type="text" ref={(input) => this.lname = input} />
+          <input defaultValue="App" type="text" ref={(input) => this.lname = input} />
         </label>
         <input type="submit" value="Submit" />
       </form>
