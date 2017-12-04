@@ -2,193 +2,175 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-class LoginControl extends React.Component {
-
-  constructor(props) {
-    super(props);
-
-    this.handleLoginClick = this.handleLoginClick.bind(this);
-    this.handleLogoutClick = this.handleLogoutClick.bind(this);
-    this.state = {isLoggedIn: false, user: {firstName: "", lastName: ""}};
-  }
-
-  handleLoginClick() {
-    this.setState({isLoggedIn: true, user: {firstName: "Chuyen", lastName: "Luu"}});
-  }
-
-  handleLogoutClick() {
-    this.setState({isLoggedIn: false, user: {firstName: "", lastName: ""}});
-  }
-
+class ProductCategoryRow extends React.Component {
   render() {
-    const isLoggedIn = this.state.isLoggedIn;
-
-    let button = null;
-    if (isLoggedIn) {
-      button = <button onClick={this.handleLogoutClick}>Logout</button>;
-    } else {
-      button = <button onClick={this.handleLoginClick}>Login</button>;
-    }
-
-    let user = 'Anonymous';
-    if (this.state.user.firstName || this.state.user.lastName) {
-      if (!this.state.user.firstName) {
-        user = this.state.user.lastName;
-      }
-
-      if (!this.state.user.lastName) {
-        user = this.state.user.firstName;
-      }
-
-      user = this.state.user.firstName + ' ' + this.state.user.lastName;
-    }
-
+    const category = this.props.category;
     return (
-      <div>
-        <h1>Hello, {user}!</h1>
-        {button}
-      </div>
+      <tr>
+        <th colSpan="2" className="text-center">
+          {category}
+        </th>
+      </tr>
     );
   }
 }
 
-class Clock extends React.Component {
+class ProductRow extends React.Component {
+  render() {
+    const product = this.props.product;
+    const name = product.stocked ?
+      product.name :
+      <span className="out-tock">
+        {product.name}
+      </span>;
 
+    return (
+      <tr>
+        <td>{name}</td>
+        <td className="text-right">{product.price}</td>
+      </tr>
+    );
+  }
+}
+
+class ProductTable extends React.Component {
+  render() {
+    const filterText = this.props.filterText.toString().toLowerCase();
+    const inStockOnly = this.props.inStockOnly;
+
+    const rows = [];
+    let lastCategory = null;
+
+    this.props.products.forEach((product) => {
+      if (product.name.toString().toLowerCase().indexOf(filterText) === -1) {
+        return;
+      }
+      if (inStockOnly && !product.stocked) {
+        return;
+      }
+      if (product.category !== lastCategory) {
+        rows.push(
+          <ProductCategoryRow
+            category={product.category}
+            key={product.category} />
+        );
+      }
+      rows.push(
+        <ProductRow
+          product={product}
+          key={product.name}
+        />
+      );
+      lastCategory = product.category;
+    });
+
+    return (
+      <table className="table-fill">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Price</th>
+          </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+      </table>
+    );
+  }
+}
+
+class SearchBar extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {date: new Date()}
+
+    this.handleFilterTextChange = this.handleFilterTextChange.bind(this);
+    this.handleInStockChange = this.handleInStockChange.bind(this);
   }
 
-
-  componentDidMount() {
-    this.timeID = setInterval(() => this.tick(), 1000);
+  handleFilterTextChange(e) {
+    this.props.onFilterTextChange(e.target.value);
   }
 
-  componentWillMount() {
-    clearInterval(this.timeID)
+  handleInStockChange(e) {
+    this.props.onInStockChange(e.target.checked);
   }
 
-  tick() {
+  render() {
+    return (
+      <form className="filters-products">
+        <input
+          type="text"
+          placeholder="Search..."
+          value={this.props.filterText}
+          onChange={this.handleFilterTextChange}
+        />
+        <p>
+          <input
+            type="checkbox"
+            checked={this.props.inStockOnly}
+            onChange={this.handleInStockChange}
+          />
+          {' '}
+          Only show products in stock
+        </p>
+      </form>
+    );
+  }
+}
+
+class FilterableProductTable extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      filterText: '',
+      inStockOnly: false
+    };
+
+    this.handleFilterTextChange = this.handleFilterTextChange.bind(this);
+    this.handleInStockChange = this.handleInStockChange.bind(this);
+  }
+
+  handleFilterTextChange(filterText) {
     this.setState({
-      date: new Date()
+      filterText: filterText
+    });
+  }
+
+  handleInStockChange(inStockOnly) {
+    this.setState({
+      inStockOnly: inStockOnly
     });
   }
 
   render() {
     return (
       <div>
-        <p>It is {this.state.date.toLocaleTimeString()}.</p>
+        <SearchBar
+          filterText={this.state.filterText}
+          inStockOnly={this.state.inStockOnly}
+          onFilterTextChange={this.handleFilterTextChange}
+          onInStockChange={this.handleInStockChange}
+        />
+        <ProductTable
+          products={this.props.products}
+          filterText={this.state.filterText}
+          inStockOnly={this.state.inStockOnly}
+        />
       </div>
-    )
-  }
-}
-
-class ListItem extends React.Component {
-
-  constructor(props) {
-    super(props);
-    this.state = {value: props.value}
-  }
-
-
-  render() {
-    return <li>{this.state.value.toString()}</li>;
-  }
-}
-
-class NumberList extends React.Component {
-
-  constructor(props) {
-    super(props);
-    this.state = {values: props.values}
-  }
-
-
-  render() {
-    let listItems = this.state.values.map((val) => <ListItem key={val.toString()} value={val} />);
-    return <ul>{listItems}</ul>;
-  }
-}
-
-class FavoriteForm extends React.Component {
-
-  constructor(props) {
-    super(props);
-
-    this.state = {firstName: "", lastName: "", isMale: false};
-
-    this.handleInputChange = this.handleInputChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-  }
-
-  handleInputChange(event) {
-    const target = event.target;
-    const value = target.type === 'checkbox' ? target.checked : target.value;
-    const name = target.name;
-
-    this.setState({[name]: value});
-  }
-
-  handleSubmit(event) {
-    console.log(this.state);
-    event.preventDefault();
-    this.setState({firstName: "", lastName: "", isMale: false});
-  }
-
-  render() {
-    return (
-      <form className="form" onSubmit={this.handleSubmit}>
-        <div className="form-input">
-          <label>First name</label>
-          <input
-            name="firstName"
-            type="text"
-            value={this.state.firstName}
-            onChange={this.handleInputChange} />
-        </div>
-
-        <div className="form-input">
-          <label>Last name</label>
-          <input
-            name="lastName"
-            type="text"
-            value={this.state.lastName}
-            onChange={this.handleInputChange} />
-        </div>
-
-        <div className="form-input">
-          <label>Male</label>
-          <input
-            name="isMale"
-            type="checkbox"
-            checked={this.state.isMale}
-            onChange={this.handleInputChange} />
-        </div>
-
-        <div className="form-action">
-          <input type="submit" value="Submit" />
-        </div>
-      </form>
     );
   }
 }
 
-const numbers = [1, 2, 3, 4, 5];
 
-class App extends React.Component {
-  render() {
-    return (
-      <main>
-        <LoginControl />
-        <Clock />
-        <NumberList values={numbers} />
-        <FavoriteForm />
-      </main>
-    );
-  }
-}
+const PRODUCTS = [
+  {category: 'Sporting Goods', price: '$49.99', stocked: true, name: 'Football'},
+  {category: 'Sporting Goods', price: '$9.99', stocked: true, name: 'Baseball'},
+  {category: 'Sporting Goods', price: '$29.99', stocked: false, name: 'Basketball'},
+  {category: 'Electronics', price: '$99.99', stocked: true, name: 'iPod Touch'},
+  {category: 'Electronics', price: '$399.99', stocked: false, name: 'iPhone 5'},
+  {category: 'Electronics', price: '$199.99', stocked: true, name: 'Nexus 7'}
+];
 
 ReactDOM.render(
-  <App />,
+  <FilterableProductTable products={PRODUCTS} />,
   document.getElementById('root')
 );
