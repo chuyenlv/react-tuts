@@ -6,8 +6,14 @@ class TodoItem extends React.Component {
   constructor(props) {
     super(props);
 
+    this.state = {editing: false}
+
     this.handleStatusChange = this.handleStatusChange.bind(this);
     this.handleRemoveNote = this.handleRemoveNote.bind(this);
+    this.handleEnableEdit = this.handleEnableEdit.bind(this);
+
+    this.setWrapperRef = this.setWrapperRef.bind(this);
+    this.handleClickOutside = this.handleClickOutside.bind(this);
   }
 
   handleStatusChange(event) {
@@ -19,21 +25,60 @@ class TodoItem extends React.Component {
     this.props.onTodoDelete(todo);
   }
 
+  handleEnableEdit() {
+    this.setState({
+      editing: true
+    });
+  }
+
+  componentDidMount() {
+    document.addEventListener('mousedown', this.handleClickOutside);
+  }
+
+  componentWillMount() {
+    document.removeEventListener('mousedown', this.handleClickOutside);
+  }
+
+  setWrapperRef(node) {
+    this.wrapperRef = node;
+  }
+
+  handleClickOutside(event) {
+    if (this.wrapperRef && !this.wrapperRef.contains(event.target)) {
+      if (this.newName.value) {
+        this.props.todo.name = this.newName.value;
+        this.props.onTodoUpdate(this.props.todo);
+      }
+
+      this.setState({
+        editing: false
+      });
+    }
+  }
+
   render() {
     const todo = this.props.todo;
-    let classes = todo.completed ? 'completed' : 'none';
+    let classes = '';
+    if (todo.completed) {
+      classes += ' completed';
+    }
+
+    if (this.state.editing) {
+      classes += ' editing';
+    }
 
     return (
-      <li className={classes}>
+      <li className={classes} ref={this.setWrapperRef}>
         <div className="view">
           <input className="toggle" type="checkbox"
               defaultChecked={todo.completed}
               onChange={this.handleStatusChange} />
-          <label>{todo.name}</label>
+          <label onDoubleClick={this.handleEnableEdit}>{todo.name}</label>
           <button className="destroy"
               onClick={(e) => this.handleRemoveNote(todo)}></button>
         </div>
-        <input className="edit" defaultValue={todo.name} />
+        <input className="edit" defaultValue={todo.name}
+            ref={(input) => this.newName = input} />
       </li>
     );
   }
