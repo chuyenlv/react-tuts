@@ -2,72 +2,93 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-// Include jQuery and other plugins.
-import $ from 'jquery';
-window.jQuery = $
-require('chosen-js');
-require('chosen-js/chosen.min.css');
-
-class Chosen extends React.Component {
-
-  componentDidMount() {
-    this.$el = $(this.el);
-    this.$el.chosen();
-  }
-
-  componentWillUnmount() {
-    this.$el.chosen('destroy');
-  }
-
+class TodoItem extends React.Component {
   render() {
+    const todo = this.props.todo;
+    let classes = todo.completed ? 'completed' : 'none';
+
     return (
-      <div>
-        <select className="chosen-choices"
-          ref={(el) => this.el = el}
-          defaultValue={this.props.optionSelected}>
-          {this.props.children}
-        </select>
-      </div>
+      <li className={classes}>
+        <div className="view">
+          <input className="toggle" type="checkbox" defaultChecked={todo.completed} />
+          <label>{todo.name}</label>
+          <button className="destroy"></button>
+        </div>
+        <input className="edit" defaultValue={todo.name} />
+      </li>
     );
   }
 }
 
-class FullForm extends React.Component {
-  constructor(props) {
-    super(props);
-    this.handleSubmit = this.handleSubmit.bind(this);
-  }
-
-  handleSubmit(event) {
-    console.log(this);
-    alert('A name was submitted: ' + this.fname.value + ' ' + this.lname.value);
-    event.preventDefault();
-  }
-
+class TodoList extends React.Component {
   render() {
+    const items = [];
+
+    this.props.todos.forEach((todo) => {
+      items.push(
+        <TodoItem todo={todo} key={todo.id} />
+      );
+    });
+
     return (
-      <form onSubmit={this.handleSubmit}>
-        <Chosen optionSelected="US">
-          <option value="VN">Vietnam</option>
-          <option value="CN">China</option>
-          <option value="US">USA</option>
-          <option value="UK">UK</option>
-        </Chosen>
-        <label>
-          First Name:
-          <input defaultValue="React" type="text" ref={(input) => this.fname = input} />
-        </label>
-        <label>
-          Last Name:
-          <input defaultValue="App" type="text" ref={(input) => this.lname = input} />
-        </label>
-        <input type="submit" value="Submit" />
-      </form>
+      <section className="main">
+        <input itemID="toggle-all" className="toggle-all" type="checkbox" />
+        <label htmlFor="toggle-all">Mark all as complete</label>
+        <ul className="todo-list">{items}</ul>
+      </section>
     );
   }
 }
+
+class TodoFilters extends React.Component {
+  render() {
+    const items_left = this.props.todos.filter((todo => todo.completed === false));
+
+    return (
+      <footer className="footer">
+        <span className="todo-count"><strong>{items_left.length}</strong> item left</span>
+        <ul className="filters">
+          <li>
+            <a className="selected" href="#/">All</a>
+          </li>
+          <li>
+            <a href="#/active">Active</a>
+          </li>
+          <li>
+            <a href="#/completed">Completed</a>
+          </li>
+        </ul>
+        <button className="clear-completed">Clear completed</button>
+      </footer>
+    );
+  }
+}
+
+class Todo extends React.Component {
+  render() {
+    return (
+      <section className="todoapp">
+        <header className="header">
+          <h1>todos</h1>
+          <input className="new-todo" placeholder="What needs to be done?" />
+        </header>
+
+        <TodoList todos={this.props.todos} />
+
+        <TodoFilters todos={this.props.todos} />
+      </section>
+    );
+  }
+}
+
+
+const TODOS = [
+  {id: 1, name: 'Create a TodoMVC template', completed: true},
+  {id: 2, name: 'Rule the web', completed: false},
+  {id: 3, name: 'Thinking in ReactJs', completed: false}
+];
 
 ReactDOM.render(
-  <FullForm />,
+  <Todo todos={TODOS} />,
   document.getElementById('root')
 );
