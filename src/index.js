@@ -3,6 +3,22 @@ import ReactDOM from 'react-dom';
 import './index.css';
 
 class TodoItem extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.handleStatusChange = this.handleStatusChange.bind(this);
+    this.handleRemoveNote = this.handleRemoveNote.bind(this);
+  }
+
+  handleStatusChange(event) {
+    this.props.todo.completed = event.target.checked;
+    this.props.onTodoUpdate(this.props.todo);
+  }
+
+  handleRemoveNote(todo) {
+    this.props.onTodoDelete(todo);
+  }
+
   render() {
     const todo = this.props.todo;
     let classes = todo.completed ? 'completed' : 'none';
@@ -10,9 +26,12 @@ class TodoItem extends React.Component {
     return (
       <li className={classes}>
         <div className="view">
-          <input className="toggle" type="checkbox" defaultChecked={todo.completed} />
+          <input className="toggle" type="checkbox"
+              defaultChecked={todo.completed}
+              onChange={this.handleStatusChange} />
           <label>{todo.name}</label>
-          <button className="destroy"></button>
+          <button className="destroy"
+              onClick={(e) => this.handleRemoveNote(todo)}></button>
         </div>
         <input className="edit" defaultValue={todo.name} />
       </li>
@@ -21,6 +40,36 @@ class TodoItem extends React.Component {
 }
 
 class TodoList extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleTodoStatusChange = this.handleTodoStatusChange.bind(this);
+    this.handleTodoDelete = this.handleTodoDelete.bind(this);
+  }
+
+  handleTodoStatusChange(todo) {
+    let todos = [];
+    this.props.todos.forEach((item) => {
+      if (item.id === todo.id) {
+        todos.push(todo);
+      } else {
+        todos.push(item);
+      }
+    });
+
+    this.props.onTodosUpdate(todos);
+  }
+
+  handleTodoDelete(todo) {
+    let todos = [];
+    this.props.todos.forEach((item) => {
+      if (item.id !== todo.id) {
+        todos.push(item);
+      }
+    });
+
+    this.props.onTodosUpdate(todos);
+  }
+
   render() {
     const filterType = this.props.fitlerType.toString().toLowerCase();
     const items = [];
@@ -28,18 +77,24 @@ class TodoList extends React.Component {
     this.props.todos.forEach((todo) => {
       if (filterType === 'all') {
         items.push(
-          <TodoItem todo={todo} key={todo.id} />
+          <TodoItem todo={todo} key={todo.id}
+              onTodoUpdate={this.handleTodoStatusChange}
+              onTodoDelete={this.handleTodoDelete} />
         );
       } else {
         if (filterType === 'active' && !todo.completed) {
           items.push(
-            <TodoItem todo={todo} key={todo.id} />
+            <TodoItem todo={todo} key={todo.id}
+                onTodoUpdate={this.handleTodoStatusChange}
+                onTodoDelete={this.handleTodoDelete} />
           );
         }
 
         if (filterType === 'completed' && todo.completed) {
           items.push(
-            <TodoItem todo={todo} key={todo.id} />
+            <TodoItem todo={todo} key={todo.id}
+                onTodoUpdate={this.handleTodoStatusChange}
+                onTodoDelete={this.handleTodoDelete} />
           );
         }
       }
@@ -92,7 +147,7 @@ class TodoFilters extends React.Component {
       fitlers_render.push(
         <li key={filter.id}>
           <a className={filter_class} href="/"
-            onClick={(e) => {e.preventDefault(); this.handleFilterChange(filter.id)}}>{filter.text}</a>
+              onClick={(e) => {e.preventDefault(); this.handleFilterChange(filter.id)}}>{filter.text}</a>
         </li>
       );
     });
@@ -114,19 +169,18 @@ class Todo extends React.Component {
 
     this.state = {
       newTodo: '',
-      lastId: 3,
-      todos: this.props.todos,
+      lastId: 1,
+      todos: [],
       filter: 'all' // all, active and completed.
     }
 
     this.handleAddNew = this.handleAddNew.bind(this);
     this.handleFilterChange = this.handleFilterChange.bind(this);
+    this.handleTodosUpdate = this.handleTodosUpdate.bind(this);
   }
 
   handleAddNew(e) {
     if (e.key === 'Enter') {
-      console.log('Add new todo: ' + this.name.value);
-
       let newTodos = this.state.todos;
       newTodos.push({
         id: this.state.lastId + 1,
@@ -147,6 +201,12 @@ class Todo extends React.Component {
     });
   }
 
+  handleTodosUpdate(newTodos) {
+    this.setState({
+      todos: newTodos
+    });
+  }
+
   render() {
     return (
       <section className="todoapp">
@@ -158,7 +218,9 @@ class Todo extends React.Component {
               ref={(input) => this.name = input} />
         </header>
 
-        <TodoList todos={this.state.todos} fitlerType={this.state.filter} />
+        <TodoList todos={this.state.todos}
+            fitlerType={this.state.filter}
+            onTodosUpdate={this.handleTodosUpdate} />
 
         <TodoFilters todos={this.state.todos}
             filterType={this.state.filter}
@@ -169,13 +231,7 @@ class Todo extends React.Component {
 }
 
 
-const TODOS = [
-  {id: 1, name: 'Create a TodoMVC template', completed: true},
-  {id: 2, name: 'Rule the web', completed: false},
-  {id: 3, name: 'Thinking in ReactJs', completed: false}
-];
-
 ReactDOM.render(
-  <Todo todos={TODOS} />,
+  <Todo />,
   document.getElementById('root')
 );
