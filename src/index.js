@@ -114,9 +114,13 @@ class TodoFilters extends React.Component {
   constructor(props) {
     super(props);
 
-    this.state = {filterType: this.props.filterType.toString().toLowerCase()}
+    this.state = {
+      filterType: this.props.filterType.toString().toLowerCase(),
+      todos: this.props.todos
+    }
 
     this.handleFilterChange = this.handleFilterChange.bind(this);
+    this.handleClearCompleted = this.handleClearCompleted.bind(this);
   }
 
   handleFilterChange(filterType) {
@@ -127,8 +131,21 @@ class TodoFilters extends React.Component {
     this.props.onFilterChange(filterType);
   }
 
+  handleClearCompleted() {
+    let newTodos = [];
+    this.state.todos.forEach((todo) => {
+      if (todo.completed) {
+        console.log('Delete todo: ' + todo.name);
+      } else {
+        newTodos.push(todo);
+      }
+    });
+
+    this.props.onClearCompleted(newTodos);
+  }
+
   render() {
-    const items_left = this.props.todos.filter((todo => todo.completed === false));
+    const items_completed = this.state.todos.filter((todo => todo.completed === true));
 
     let filters = [
       {id: 'all', text: 'All'},
@@ -138,6 +155,7 @@ class TodoFilters extends React.Component {
 
     let fitlers_render = [];
     let filter_class = '';
+
     filters.forEach((filter) => {
       filter_class = '';
       if (filter.id === this.state.filterType) {
@@ -152,18 +170,22 @@ class TodoFilters extends React.Component {
       );
     });
 
+    let btn_clear = '';
+    if (items_completed.length) {
+      btn_clear = <button className="clear-completed" onClick={this.handleClearCompleted}>Clear completed</button>
+    }
+
     return (
       <footer className="footer">
-        <span className="todo-count"><strong>{items_left.length}</strong> item left</span>
+        <span className="todo-count"><strong>{this.state.todos.length - items_completed.length}</strong> item left</span>
         <ul className="filters">{fitlers_render}</ul>
-        <button className="clear-completed">Clear completed</button>
+        {btn_clear}
       </footer>
     );
   }
 }
 
 class Todo extends React.Component {
-
   constructor(props) {
     super(props);
 
@@ -224,7 +246,8 @@ class Todo extends React.Component {
 
         <TodoFilters todos={this.state.todos}
             filterType={this.state.filter}
-            onFilterChange={this.handleFilterChange} />
+            onFilterChange={this.handleFilterChange}
+            onClearCompleted={this.handleTodosUpdate} />
       </section>
     );
   }
