@@ -65,17 +65,51 @@ class TodoFilters extends React.Component {
 }
 
 class Todo extends React.Component {
+
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      newTodo: '',
+      lastId: 3,
+      todos: this.props.todos
+    }
+
+    this.handleAddNew = this.handleAddNew.bind(this);
+  }
+
+  handleAddNew(e) {
+    if (e.key === 'Enter') {
+      console.log('Add new todo: ' + this.name.value);
+
+      let newTodos = this.state.todos;
+      newTodos.push({
+        id: this.state.lastId + 1,
+        name: this.name.value,
+        completed: false
+      });
+
+      this.setState({todos: newTodos});
+      this.setState({lastId: this.state.lastId + 1});
+
+      this.name.value = '';
+    }
+  }
+
   render() {
     return (
       <section className="todoapp">
         <header className="header">
           <h1>todos</h1>
-          <input className="new-todo" placeholder="What needs to be done?" />
+          <input className="new-todo"
+              placeholder="What needs to be done?"
+              onKeyPress={this.handleAddNew}
+              ref={(input) => this.name = input} />
         </header>
 
-        <TodoList todos={this.props.todos} />
+        <TodoList todos={this.state.todos} />
 
-        <TodoFilters todos={this.props.todos} />
+        <TodoFilters todos={this.state.todos} />
       </section>
     );
   }
