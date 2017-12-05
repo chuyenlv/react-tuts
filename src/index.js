@@ -22,12 +22,27 @@ class TodoItem extends React.Component {
 
 class TodoList extends React.Component {
   render() {
+    const filterType = this.props.fitlerType.toString().toLowerCase();
     const items = [];
 
     this.props.todos.forEach((todo) => {
-      items.push(
-        <TodoItem todo={todo} key={todo.id} />
-      );
+      if (filterType === 'all') {
+        items.push(
+          <TodoItem todo={todo} key={todo.id} />
+        );
+      } else {
+        if (filterType === 'active' && !todo.completed) {
+          items.push(
+            <TodoItem todo={todo} key={todo.id} />
+          );
+        }
+
+        if (filterType === 'completed' && todo.completed) {
+          items.push(
+            <TodoItem todo={todo} key={todo.id} />
+          );
+        }
+      }
     });
 
     return (
@@ -41,23 +56,51 @@ class TodoList extends React.Component {
 }
 
 class TodoFilters extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {filterType: this.props.filterType.toString().toLowerCase()}
+
+    this.handleFilterChange = this.handleFilterChange.bind(this);
+  }
+
+  handleFilterChange(filterType) {
+    this.setState({
+      filterType: filterType
+    });
+
+    this.props.onFilterChange(filterType);
+  }
+
   render() {
     const items_left = this.props.todos.filter((todo => todo.completed === false));
+
+    let filters = [
+      {id: 'all', text: 'All'},
+      {id: 'active', text: 'Active'},
+      {id: 'completed', text: 'Completed'}
+    ];
+
+    let fitlers_render = [];
+    let filter_class = '';
+    filters.forEach((filter) => {
+      filter_class = '';
+      if (filter.id === this.state.filterType) {
+        filter_class = 'selected';
+      }
+
+      fitlers_render.push(
+        <li key={filter.id}>
+          <a className={filter_class} href="/"
+            onClick={(e) => {e.preventDefault(); this.handleFilterChange(filter.id)}}>{filter.text}</a>
+        </li>
+      );
+    });
 
     return (
       <footer className="footer">
         <span className="todo-count"><strong>{items_left.length}</strong> item left</span>
-        <ul className="filters">
-          <li>
-            <a className="selected" href="#/">All</a>
-          </li>
-          <li>
-            <a href="#/active">Active</a>
-          </li>
-          <li>
-            <a href="#/completed">Completed</a>
-          </li>
-        </ul>
+        <ul className="filters">{fitlers_render}</ul>
         <button className="clear-completed">Clear completed</button>
       </footer>
     );
@@ -72,10 +115,12 @@ class Todo extends React.Component {
     this.state = {
       newTodo: '',
       lastId: 3,
-      todos: this.props.todos
+      todos: this.props.todos,
+      filter: 'all' // all, active and completed.
     }
 
     this.handleAddNew = this.handleAddNew.bind(this);
+    this.handleFilterChange = this.handleFilterChange.bind(this);
   }
 
   handleAddNew(e) {
@@ -96,6 +141,12 @@ class Todo extends React.Component {
     }
   }
 
+  handleFilterChange(filterType) {
+    this.setState({
+      filter: filterType
+    });
+  }
+
   render() {
     return (
       <section className="todoapp">
@@ -107,9 +158,11 @@ class Todo extends React.Component {
               ref={(input) => this.name = input} />
         </header>
 
-        <TodoList todos={this.state.todos} />
+        <TodoList todos={this.state.todos} fitlerType={this.state.filter} />
 
-        <TodoFilters todos={this.state.todos} />
+        <TodoFilters todos={this.state.todos}
+            filterType={this.state.filter}
+            onFilterChange={this.handleFilterChange} />
       </section>
     );
   }
