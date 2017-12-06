@@ -19,10 +19,33 @@ class TodoItem extends React.Component {
   handleStatusChange(event) {
     this.props.todo.completed = event.target.checked;
     this.props.onTodoUpdate(this.props.todo);
+
+    let params = {
+      method: 'PATCH',
+      body: JSON.stringify({
+        completed: event.target.checked
+      }),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8"
+      }
+    }
+
+    fetch(window.env.API_URL + '/todos/' + this.props.todo.id, params)
+      .then((res) => {
+        if (res.status === 200) {
+          console.log('Update status of todo ' + this.props.todo.id);
+        }
+      });
   }
 
   handleRemoveNote(todo) {
     this.props.onTodoDelete(todo);
+    fetch(window.env.API_URL + '/todos/' + todo.id, {method: 'DELETE'})
+      .then((res) => {
+        if (res.status === 200) {
+          console.log('Delete todo ' + todo.id);
+        }
+      });
   }
 
   handleEnableEdit() {
@@ -44,10 +67,27 @@ class TodoItem extends React.Component {
   }
 
   handleClickOutside(event) {
-    if (this.wrapperRef && !this.wrapperRef.contains(event.target)) {
+    if (this.wrapperRef && !this.wrapperRef.contains(event.target) && this.state.editing) {
       if (this.newName.value) {
-        this.props.todo.name = this.newName.value;
+        this.props.todo.title = this.newName.value;
         this.props.onTodoUpdate(this.props.todo);
+
+        let params = {
+          method: 'PATCH',
+          body: JSON.stringify({
+            title: this.newName.value
+          }),
+          headers: {
+            "Content-type": "application/json; charset=UTF-8"
+          }
+        }
+
+        fetch(window.env.API_URL + '/todos/' + this.props.todo.id, params)
+          .then((res) => {
+            if (res.status === 200) {
+              console.log('Update title of todo ' + this.props.todo.id);
+            }
+          });
       }
 
       this.setState({
@@ -73,11 +113,11 @@ class TodoItem extends React.Component {
           <input className="toggle" type="checkbox"
               defaultChecked={todo.completed}
               onChange={this.handleStatusChange} />
-          <label onDoubleClick={this.handleEnableEdit}>{todo.name}</label>
+          <label onDoubleClick={this.handleEnableEdit}>{todo.title}</label>
           <button className="destroy"
               onClick={(e) => this.handleRemoveNote(todo)}></button>
         </div>
-        <input className="edit" defaultValue={todo.name}
+        <input className="edit" defaultValue={todo.title}
             ref={(input) => this.newName = input} />
       </li>
     );
@@ -147,7 +187,7 @@ class TodoList extends React.Component {
 
     return (
       <section className="main">
-        <input itemID="toggle-all" className="toggle-all" type="checkbox" />
+        <input id="toggle-all" className="toggle-all" type="checkbox" />
         <label htmlFor="toggle-all">Mark all as complete</label>
         <ul className="todo-list">{items}</ul>
       </section>
@@ -160,8 +200,7 @@ class TodoFilters extends React.Component {
     super(props);
 
     this.state = {
-      filterType: this.props.filterType.toString().toLowerCase(),
-      todos: this.props.todos
+      filterType: this.props.filterType.toString().toLowerCase()
     }
 
     this.handleFilterChange = this.handleFilterChange.bind(this);
@@ -178,9 +217,14 @@ class TodoFilters extends React.Component {
 
   handleClearCompleted() {
     let newTodos = [];
-    this.state.todos.forEach((todo) => {
+    this.props.todos.forEach((todo) => {
       if (todo.completed) {
-        console.log('Delete todo: ' + todo.name);
+        fetch(window.env.API_URL + '/todos/' + todo.id, {method: 'DELETE'})
+          .then((res) => {
+            if (res.status === 200) {
+              console.log('Delete todo ' + todo.id);
+            }
+          });
       } else {
         newTodos.push(todo);
       }
@@ -190,7 +234,7 @@ class TodoFilters extends React.Component {
   }
 
   render() {
-    const items_completed = this.state.todos.filter((todo => todo.completed === true));
+    const items_completed = this.props.todos.filter((todo => todo.completed === true));
 
     let filters = [
       {id: 'all', text: 'All'},
@@ -222,7 +266,7 @@ class TodoFilters extends React.Component {
 
     return (
       <footer className="footer">
-        <span className="todo-count"><strong>{this.state.todos.length - items_completed.length}</strong> item left</span>
+        <span className="todo-count"><strong>{this.props.todos.length - items_completed.length}</strong> item left</span>
         <ul className="filters">{fitlers_render}</ul>
         {btn_clear}
       </footer>
@@ -236,9 +280,9 @@ class Todo extends React.Component {
 
     this.state = {
       newTodo: '',
-      lastId: 1,
       todos: [],
-      filter: 'all' // all, active and completed.
+      filter: 'all', // all, active and completed.
+      userId: 1
     }
 
     this.handleAddNew = this.handleAddNew.bind(this);
@@ -247,18 +291,31 @@ class Todo extends React.Component {
   }
 
   handleAddNew(e) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && this.name.value) {
       let newTodos = this.state.todos;
-      newTodos.push({
-        id: this.state.lastId + 1,
-        name: this.name.value,
-        completed: false
-      });
 
-      this.setState({todos: newTodos});
-      this.setState({lastId: this.state.lastId + 1});
+      let todo = {
+        title: this.name.value,
+        completed: false,
+        userId: this.state.userId
+      }
+
+      let params = {
+        method: 'POST',
+        body: JSON.stringify(todo),
+        headers : {
+          "Content-type": "application/json; charset=UTF-8"
+        }
+      }
 
       this.name.value = '';
+
+      fetch(window.env.API_URL + '/todos', params)
+        .then(res => res.json())
+        .then((result) => {
+          newTodos.push(result)
+          this.setState({todos: newTodos});
+        });
     }
   }
 
@@ -272,6 +329,21 @@ class Todo extends React.Component {
     this.setState({
       todos: newTodos
     });
+  }
+
+  componentDidMount() {
+    fetch(window.env.API_URL + '/todos?userId=' + this.state.userId)
+      .then(res => res.json())
+      .then(
+        (data) => {
+          this.setState({
+            todos: data
+          });
+        },
+        (err) => {
+          console.log('Fetch data wrong.');
+        }
+      );
   }
 
   render() {
