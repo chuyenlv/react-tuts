@@ -1,22 +1,40 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { Draggable, Droppable } from 'react-drag-and-drop'
+
 import './index.css';
 
-class Modal extends React.Component {
+
+class CardItem extends React.Component {
   render() {
     return (
-      <div className="modal" data-status={this.props.status}>
-        <div className="modal-left" style={{backgroundImage: "url(" + this.props.product.image + ")"}}>
-          <span className="price-tag">{this.props.product.price}</span>
+      <Draggable type="card" data={this.props.item.id}><li>{this.props.item.name}</li></Draggable>
+    );
+  }
+}
+
+class CardsList extends React.Component {
+  onDrop(data) {
+    this.props.onDnD(data.card, this.props.name);
+  }
+
+  render() {
+    let items = [];
+    this.props.cards.forEach(card => {
+      items.push(
+        <CardItem key={card.id} item={card} />
+      );
+    });
+
+    return (
+      <Droppable
+        types={['card']}
+        onDrop={this.onDrop.bind(this)}>
+        <div className="list-cards">
+          <h2>{this.props.name}</h2>
+          <ul className="cards dropable">{items}</ul>
         </div>
-        <div className="modal-right">
-          <h2>{this.props.product.title}</h2>
-          <p>{this.props.product.description}</p>
-          <button onClick={this.props.onModalClickClose} className="close">
-            <span className="fa fa-close"></span>
-          </button>
-        </div>
-      </div>
+      </Droppable>
     );
   }
 }
@@ -24,21 +42,60 @@ class Modal extends React.Component {
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {modal: false}
-    this.modalToggle = this.modalToggle.bind(this);
+    this.handleDnD = this.handleDnD.bind(this);
   }
 
-  modalToggle() {
-    this.setState({modal: !this.state.modal});
+  handleDnD(id, group) {
+    let newCards = [];
+    this.props.cards.forEach((card) => {
+      if (card.id === id) {
+        card.group = group;
+      }
+
+      newCards.push(card);
+    });
+
+    this.setState({
+      cards: newCards
+    });
   }
 
   render() {
+    let cards = this.props.cards.sort((a, b) => {
+      if (a.group < b.group)
+        return -1
+      if (a.group > b.group)
+        return 1
+      return 0
+    });
+
+    let listCards = [];
+    let tmp = [];
+    let lastGroup = null;
+    cards.forEach((card) => {
+      if (lastGroup !== card.group) {
+        if (tmp.length) {
+          listCards.push(
+            <CardsList cards={tmp} name={lastGroup} key={lastGroup} onDnD={this.handleDnD} />
+          );
+        }
+        tmp = [];
+      }
+
+      lastGroup = card.group;
+
+      tmp.push(card);
+    });
+
+    if (lastGroup) {
+      listCards.push(
+        <CardsList cards={tmp} name={lastGroup} key={lastGroup} onDnD={this.handleDnD} />
+      );
+    }
+
     return (
-      <div>
-        <button className="place-order" onClick={this.modalToggle}>
-          <span className="fa fa-shopping-cart"></span>
-        </button>
-        <Modal onModalClickClose={this.modalToggle} status={this.state.modal} product={PRODUCT} />
+      <div className="board-cards">
+        {listCards}
       </div>
     );
   }
@@ -46,14 +103,14 @@ class App extends React.Component {
 
 
 
-const PRODUCT = {
-  title: "Product title",
-  image: "https://dummyimage.com/400x300",
-  description: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.",
-  price: "$99"
-}
+const CARDS = [
+  {id: 'banana', name: 'Banana', group: 'From'},
+  {id: 'apple', name: 'Apple', group: 'To'},
+  {id: 'mango', name: 'Mango', group: 'From'},
+  {id: 'orange', name: 'Orange', group: 'From'}
+]
 
 ReactDOM.render(
-  <App />,
+  <App cards={CARDS} />,
   document.getElementById('root')
 )
