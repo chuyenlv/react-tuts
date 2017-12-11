@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import bankStore from './bankStore';
 import constants from './constants';
+import bankActionCreator from './bankActionCreator';
 
 import './style.css';
 
@@ -60,8 +61,8 @@ class BankAppContainer extends Component {
   render() {
     return (
       <BankApp balance={bankStore.getState().balance}
-        onDeposit={(amount) => bankStore.dispatch({type: constants.DEPOSIT_INTO_ACCOUNT, amount: amount})}
-        onWithdraw={(amount) => bankStore.dispatch({type: constants.WITHDRAW_FROM_ACCOUNT, amount: amount})}
+        onDeposit={(amount) => bankStore.dispatch(bankActionCreator.depositIntoAccount(amount))}
+        onWithdraw={(amount) => bankStore.dispatch(bankActionCreator.withdrawIntoAccount(amount))}
       />
     );
   }
