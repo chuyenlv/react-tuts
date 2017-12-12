@@ -1,12 +1,11 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import bankStore from './bankStore';
-import constants from './constants';
 import bankActionCreator from './bankActionCreator';
 
 import './style.css';
 
-class BankApp extends Component {
+export class BankApp extends Component {
   handleDeposit() {
     this.props.onDeposit(this.refs.amount.value);
     this.refs.amount.value = '';
@@ -34,37 +33,23 @@ class BankApp extends Component {
   }
 }
 
-BankApp.proType = {
+BankApp.propTypes = {
   balance: PropTypes.number,
   onDeposit: PropTypes.func,
   onWithdraw: PropTypes.func
 };
 
 
-class BankAppContainer extends Component {
-  constructor(props) {
-    super(props);
-    bankStore.dispatch({type: constants.CREATE_ACCOUNT});
-    this.state = {
-      balance: bankStore.getState().balance
-    }
-  }
+const mapStateToProps = state => {
+  return state
+}
 
-  componentDidMount() {
-    this.unsubscribe = bankStore.subscribe(() => this.setState({balance: bankStore.getState().balance}));
-  }
-
-  componentWillMount() {
-
-  }
-
-  render() {
-    return (
-      <BankApp balance={bankStore.getState().balance}
-        onDeposit={(amount) => bankStore.dispatch(bankActionCreator.depositIntoAccount(amount))}
-        onWithdraw={(amount) => bankStore.dispatch(bankActionCreator.withdrawIntoAccount(amount))}
-      />
-    );
+const mapDispatchToProps = (dispatch) => {
+  return {
+    onDeposit: (amount) => dispatch(bankActionCreator.depositIntoAccount(amount)),
+    onWithdraw: (amount) => dispatch(bankActionCreator.withdrawIntoAccount(amount))
   }
 }
+
+const BankAppContainer = connect(mapStateToProps, mapDispatchToProps)(BankApp);
 export default BankAppContainer;
